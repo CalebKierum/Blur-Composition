@@ -20,15 +20,15 @@ Currently this class requires MetalPerfornaceShaders to do this glow effect in t
 
 ## How To Use
 
-First create a BlurComposition2 object with a list of your BlurredLayer, ComplexBlurredLayer, and SimpleBlurredLayer objects.
+First create a BlurComposition2 object with a list of your `BlurredLayer`, `ComplexBlurredLayer`, and `SimpleBlurredLayer` objects.
 
 Then call prepareWith() passing in the source and destination texture and parameters like:
--scaleFactor: Sort of a resolution parameter. If you scale this down the effect looses quality but potentially performance.
--width/height of passed in texture
--useBlit whether to use Blitting in order to copy textures of same resolution
--pixelFormat: The format of the pixels in the texture
--sampleCount: Sample count for your renderer
--finalCombineMode: An enum defining how all the layers should be combined in the end
+- `scaleFactor`: Sort of a resolution parameter. If you scale this down the effect looses quality but potentially performance.
+- `width/height`: of passed in texture
+- `useBlit`: whether to use Blitting in order to copy textures of same resolution
+- `pixelFormat`: The format of the pixels in the texture
+- `sampleCount`: Sample count for your renderer
+- `finalCombineMode`: An enum defining how all the layers should be combined in the end
 
 
-Finally call render() with a command buffer in order to have all the steps for processing this blur added to the command buffer
+Finally call `render()` with a command buffer in order to have all the steps for processing this blur added to it.

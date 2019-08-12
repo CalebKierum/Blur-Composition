@@ -1,6 +1,5 @@
 //
 //  BlurComposition2.swift
-//  TrilliumRemastered
 //
 //  Created by Caleb on 1/13/19.
 //  Copyright © 2019 Caleb. All rights reserved.
@@ -10,46 +9,9 @@ import Metal
 import Foundation
 import MetalPerformanceShaders
 
-class BlurredLayer: NSObject {
-    let scaleFactor:Float
-    let opacity:Float
-    let power:Float
-    init (scaleFactor:Float, opacity: Float, power:Float = 1.0) {
-        self.scaleFactor = scaleFactor
-        self.opacity = opacity
-        self.power = power
-    }
 
-}
-class ComplexBlurredLayer : BlurredLayer {
-    var pointBlurSteps:[Float]
-    init (scaleFactor:Float, opacity: Float, steps: [Float], power:Float = 1.0) {
-        pointBlurSteps = steps;
-        super.init(scaleFactor: scaleFactor, opacity: opacity, power: power)
-    }
-    
-    
-    func afterScale(by: Float) -> ComplexBlurredLayer {
-        for i in 0..<pointBlurSteps.count {
-            pointBlurSteps[i] *= by
-        }
-        return self
-    }
-}
-class SimpleBlurredLayer : BlurredLayer {
-    var pointBlur:Float
-    init (scaleFactor:Float, opacity: Float, points: Float, power:Float = 1.0) {
-        pointBlur = points
-        super.init(scaleFactor: scaleFactor, opacity: opacity, power:power)
-    }
-    
-    func afterScale(by: Float) -> SimpleBlurredLayer {
-        pointBlur *= by
-        return self
-    }
-}
-
-class IDTexture {
+// Simply stores a MTL texture with an ID for debugging purposes
+fileprivate class IDTexture {
     var texture:MTLTexture
     var id:String
     init (_ tex: MTLTexture) {
@@ -62,19 +24,19 @@ class IDTexture {
         }
     }
 }
-func == (lhs: IDTexture, rhs: IDTexture) -> Bool {
+fileprivate func == (lhs: IDTexture, rhs: IDTexture) -> Bool {
     return lhs.texture.label! == rhs.texture.label!
 }
 
-func == (lhs: IDTexture, rhs: MTLTexture) -> Bool {
+fileprivate func == (lhs: IDTexture, rhs: MTLTexture) -> Bool {
     return lhs.texture.label! == rhs.label!
 }
 
-func == (lhs: MTLTexture, rhs: IDTexture) -> Bool {
+fileprivate func == (lhs: MTLTexture, rhs: IDTexture) -> Bool {
     return rhs.texture.label! == lhs.label!
 }
 
-func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
+fileprivate func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
     return rhs.label! == lhs.label!
 }
 
@@ -88,37 +50,10 @@ func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
         case fakeadd
     }
     
-    var instructions:[Float : [([Float], Float, Float, IDTexture?)]]
+    private var instructions:[Float : [([Float], Float, Float, IDTexture?)]]
     
-    @objc convenience init (cheat: Int) {
-        // This was a great one BEFORE i added in proper kerneling
-        /*self.init([SimpleBlurredLayer(scaleFactor: 0.05, opacity: 3.0, points: 10.0, power: 1.0),
-                   SimpleBlurredLayer(scaleFactor: 0.1, opacity: 3.0, points: 10.0, power: 1.0),
-                   ComplexBlurredLayer(scaleFactor: 0.2, opacity: 1.0, steps: [1, 2, 3]),
-                   ComplexBlurredLayer(scaleFactor: 0.2, opacity: 1.0, steps: [1, 2, 3, 4]),
-                   ComplexBlurredLayer(scaleFactor: 0.2, opacity: 1.0, steps: [2, 2, 3, 4, 5]),
-                   ComplexBlurredLayer(scaleFactor: 0.2, opacity: 1.0, steps: [2, 2, 3, 4, 5])])*/
-        
-        
-        // Blurry particles
-        if (cheat == 1) {
-            self.init([SimpleBlurredLayer(scaleFactor: 0.05, opacity: 3.0, points: 66.6, power: 1.0),
-                SimpleBlurredLayer(scaleFactor: 0.1, opacity: 3.0, points: 33.3, power: 1.0),
-                ComplexBlurredLayer(scaleFactor: 0.2, opacity: 1.0, steps: [1.6, 3.3, 5]),
-                ComplexBlurredLayer(scaleFactor: 0.2, opacity: 1.0, steps: [1.6, 3.3, 5, 6.6]),
-                ComplexBlurredLayer(scaleFactor: 0.2, opacity: 1.0, steps: [3.3, 3.3, 5, 6.6, 8.3]),
-                ComplexBlurredLayer(scaleFactor: 0.2, opacity: 1.0, steps: [3.3, 3.3, 5, 6.6, 8.3])])
-        // Interface
-        } else if (cheat == 2) {
-            self.init([SimpleBlurredLayer(scaleFactor: 0.3, opacity: 0.1, points: 33, power: 2.0),
-                       SimpleBlurredLayer(scaleFactor: 0.3, opacity: 0.5, points: 5, power: 1.0)])
-        } else if (cheat == 3) {
-            self.init([SimpleBlurredLayer(scaleFactor: 0.3, opacity: 0.4, points: 4.0, power: 1.0),
-                       SimpleBlurredLayer(scaleFactor: 0.3, opacity: 0.2, points: 10.0, power: 1.0)])
-        } else {
-            self.init([])
-        }
-    }
+    
+    // Pass in an array of ComplexBlurredLayer or BlurredLayer objects
     init(_ inst:[BlurredLayer]) {
         var buildInst:[Float : [([Float], Float, Float, IDTexture?)]] = [:]
         inst.forEach({layer in
@@ -156,10 +91,9 @@ func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
         return IDTexture(create!);
     }
     
-    class EncodingStep {
-        
-    }
-    class CopyEncodingStep:EncodingStep {
+    private class EncodingStep { }
+    
+    private class CopyEncodingStep:EncodingStep {
         var descriptor:MTLRenderPassDescriptor
         var pipeline:MTLRenderPipelineState
         var source:IDTexture
@@ -169,22 +103,22 @@ func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
             self.source = source
         }
     }
-    class BlitEncodingStep:EncodingStep {
+    private class BlitEncodingStep:EncodingStep {
         var steps:[(IDTexture, IDTexture)] = []
     }
-    class BlurEncodingStep:EncodingStep {
+    private class BlurEncodingStep:EncodingStep {
         var sigma:Float
         var steps:[(IDTexture, IDTexture?)] = []
         init (sigma: Float) {
             self.sigma = sigma
         }
     }
-    class LevelObject {
+    private class LevelObject {
         var bigBlit:BlitEncodingStep = BlitEncodingStep()
         var afterSteps:[EncodingStep] = []
     }
-    var drawingSteps:[EncodingStep] = []
-    var levelObjects:[LevelObject] = []
+    private var drawingSteps:[EncodingStep] = []
+    private var levelObjects:[LevelObject] = []
     private func helperGetLevelObjectOrCreate(level:Int) -> LevelObject {
         if (level < levelObjects.count) {
             return levelObjects[level]
@@ -241,7 +175,6 @@ func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
         let masterTex = groups[masterLevel]!.first!.0
         
         for group in groups.keys {
-            // SOMEHOW GET IT IN HERE
             if (group != masterLevel) {
                 let minorMasterTex = groups[group]!.first!.0
                 // It needs the source material
@@ -283,15 +216,15 @@ func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
         }
     }
     
-    var basicCopyPipeline:MTLRenderPipelineState? = nil
+    private var basicCopyPipeline:MTLRenderPipelineState? = nil
     
-    var combiningPipeline:MTLRenderPipelineState? = nil
-    var combiningPassDecriptor:MTLRenderPassDescriptor = MTLRenderPassDescriptor()
-    var combiningPieces:[IDTexture] = []
+    private var combiningPipeline:MTLRenderPipelineState? = nil
+    private var combiningPassDecriptor:MTLRenderPassDescriptor = MTLRenderPassDescriptor()
+    private var combiningPieces:[IDTexture] = []
     
-    var sigmas:[Float : MPSImageGaussianBlur] = [:]
-    var cheatSigmaDevice:MTLDevice? = nil
-    func checkAddSigma(sigma: Float) {
+    private var sigmas:[Float : MPSImageGaussianBlur] = [:]
+    private var cheatSigmaDevice:MTLDevice? = nil
+    private func checkAddSigma(sigma: Float) {
         if let _ = sigmas[sigma] {
             
         } else {
@@ -479,7 +412,7 @@ func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
     }
     private func debugNameTexture(tex: IDTexture) -> String {
         var build = ""
-
+        
         for i in 0..<combiningPieces.count {
             if (tex == combiningPieces[i]) {
                 build += "\(i)"
@@ -495,14 +428,10 @@ func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
         
         return build
     }
-    //*
-    //  IF mode is require encoder then
-    //      pass in an encoder if it is not the first bit of the pipeline
-    //  otherwise
-    //
+    
     @objc func render(buffer: MTLCommandBuffer) {
-        var debug:Bool = false
-       
+        let debug:Bool = false
+        
         
         for step in drawingSteps {
             if let ces = step as? CopyEncodingStep {
@@ -609,50 +538,5 @@ func == (lhs: MTLTexture, rhs: MTLTexture) -> Bool {
             print(shader.getShaderString())
         }
         exit(1)
-    }
-}
-
-class DynamicTextureCombineShader {
-    private let settingsList:[(Float, Float)]
-    init (list:[(Float, Float)]) {
-        settingsList = list
-    }
-    static func vertexShader() -> String {
-        return "vertex ColorInOut gaussianComp_vertex(uint vid [[vertex_id]]) {\n\tconst float2 coords[] = {float2(-1.0, -1.0), float2(1.0, -1.0), float2(-1.0, 1.0), float2(1.0, 1.0)};\n\tconst float2 texc[] = {float2(0.0, 1.0), float2(1.0, 1.0), float2(0.0, 0.0), float2(1.0, 0.0)};\n\tconst int lu[] = {0, 1, 2, 2, 1, 3};\n\n\tColorInOut out;\n\tout.texCoord = texc[lu[vid]];\n\tout.position = float4(coords[lu[vid]], 0.0, 1.0);\n\treturn out;\n}"
-    }
-    func fragmentShader() -> String {
-        var top:String = "fragment float4 gaussianComp_fragment(ColorInOut texCoord [[stage_in]]"
-        var predicate:String = "\tconstexpr sampler colorSampler(mip_filter::linear, mag_filter::linear, min_filter::linear);\n\n\treturn "
-        
-        
-        for i in 0..<settingsList.count {
-            let level = settingsList[i]
-            top += ",\n\t\t\ttexture2d<float> texture\(i) [[texture(\(i))]]"
-            predicate += "\t\t"
-            
-            if (i != 0) {
-                predicate += "+"
-            }
-            
-            if (level.1 == 1) {
-                predicate += "(texture\(i).sample(colorSampler, texCoord.texCoord) * \(level.0))"
-            } else {
-                predicate += "(pow(texture\(i).sample(colorSampler, texCoord.texCoord), \(level.1)) * \(level.0))"
-            }
-        }
-        
-        return top + ") {\n\n\t" + predicate + ";\n}"
-    }
-    func getShaderString() -> String {
-        return DynamicTextureCombineShader.getHeader() + "\n\n" + DynamicTextureCombineShader.getStruct() + "\n\n" + DynamicTextureCombineShader.vertexShader() + "\n\n" + fragmentShader()
-    }
-    
-    
-    static private func getHeader() -> String {
-        return "using namespace metal;\n#include <metal_stdlib>"
-    }
-    
-    static private func getStruct() -> String {
-        return "typedef struct\n{\n\tfloat4 position [[position]];\n\tfloat2 texCoord;\n} ColorInOut;"
     }
 }

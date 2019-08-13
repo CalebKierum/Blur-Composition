@@ -1,14 +1,15 @@
 # Blur Composition
 
-![Diagram](https://i.imgur.com/bpFwm3j.png)
+![Diagram](https://i.imgur.com/btlm1DZ.png)
+
 
 ## Abstract
 
-For artist directed glow it is critical to have fine grained control over the blurs that make up your glow effect. This way you can finely control the look and strength of the blur. This often requires mutliple blur kernels to be combined.
+For artist directed glow it is critical to have fine grained control over the blurs that make up your glow effect. This way you can finely control the look, strength, adn composition of the blur. This often requires mutliple blur kernels to be combined. Repeated blur kernels do not look so ordering matters.
 
 From a technical side blurs and other convolutions are expensive. However it is shown that you can often utilize bilateral sampling on its own or in conjunction with blur kernels to achieve similar glow effects with less computational cost. Combining blurs at different resolutions greatly hides sampling artifacts.
 
-This class aims to combine both the technical and artistic needs into one easy to use class. 
+This class aims to combine both the technical and artistic needs into one easy to use class. The artist creates a list of blurred layers they want to combine into the final glow effect and those instructions are translated into something more technically efficient. A quality knob allows for further enhancements of performance (at the cost of quality)
 
 ## How does this work
 

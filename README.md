@@ -1,5 +1,7 @@
 # Blur Composition
 
+![Diagram](https://i.imgur.com/bpFwm3j.png)
+
 ## Abstract
 
 For artist directed glow it is critical to have fine grained control over the blurs that make up your glow effect. This way you can finely control the look and strength of the blur. This often requires mutliple blur kernels to be combined.
@@ -16,7 +18,7 @@ Custom shaders are programatically written in order to allow for shaders with dy
 
 Currently this class requires MetalPerfornaceShaders to do this glow effect in the most processor effective way.
 
-![Diagram](https://i.imgur.com/uvIVmK5.png)
+
 
 ## How To Use
 
